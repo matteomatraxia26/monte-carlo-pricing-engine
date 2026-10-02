@@ -1,0 +1,2 @@
+case,n_paths,quadrature_price,analytical_price,discounted_payoff_variance,pair_covariance,pair_correlation,plain_estimator_variance,antithetic_estimator_variance,population_vrf_quadrature,max_quadrature_reported_absolute_error
+barrier_symmetric_window,10000,3.316980527085265,3.3169805270852493,29.395563007116017,8.682341833275013,0.29536232495949166,0.0029395563007116017,0.0038077904840391028,0.7719847804213944,4.4850704066433493e-13

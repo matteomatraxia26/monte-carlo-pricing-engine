@@ -1,0 +1,11 @@
+scenario,product,price,cutoff_200_price,cutoff_difference,quadrature_error_estimate,method,cutoff
+baseline,european_call,10.394218565150155,10.394218565150155,0.0,1.1811102403254802e-10,lewis_affine_quadrature,400.0
+baseline,european_put,5.517161015221561,5.517161015221561,0.0,1.1811102403254802e-10,lewis_affine_quadrature,400.0
+high_xi,european_call,9.53170767451057,9.531707674487336,2.3234747459355276e-11,1.1414364656382606e-10,lewis_affine_quadrature,400.0
+high_xi,european_put,4.654650124581977,4.654650124558742,2.3234747459355276e-11,1.1414364656382606e-10,lewis_affine_quadrature,400.0
+rho_zero,european_call,10.274631120626509,10.274631120626509,0.0,1.1286182574748865e-10,lewis_affine_quadrature,400.0
+rho_zero,european_put,5.397573570697915,5.397573570697915,0.0,1.1286182574748865e-10,lewis_affine_quadrature,400.0
+rho_positive,european_call,10.129904322259847,10.129904322259847,0.0,1.1283742903641384e-10,lewis_affine_quadrature,400.0
+rho_positive,european_put,5.252846772331253,5.252846772331253,0.0,1.1283742903641384e-10,lewis_affine_quadrature,400.0
+deterministic_variance,european_call,12.268909017995881,12.268909017995881,0.0,0.0,deterministic_variance,400.0
+deterministic_variance,european_put,7.391851468067294,7.391851468067294,0.0,0.0,deterministic_variance,400.0
