@@ -1,208 +1,496 @@
 # Monte Carlo Pricing & Greeks Engine
 
-A Python quantitative research library for vanilla and path-dependent option
-pricing, variance reduction and sensitivity estimation. Numerical methods are
-implemented directly with NumPy/SciPy and validated through independent formulas,
-automated tests and repeated experiments.
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Quant Finance](https://img.shields.io/badge/domain-Quantitative%20Finance-purple)
 
-**Research release v0.17.0 — all 17 development milestones completed.**
+<p align="center">
+  <img src="results/figures/mc_loglog_convergence.png" width="700">
+</p>
 
-## Overview
+A modular quantitative finance framework for pricing vanilla and exotic derivatives using Monte Carlo simulation, variance reduction techniques, numerical Greeks estimation, and stochastic volatility models.
 
-The project follows a single question: how can a Monte Carlo price or Greek be
-made both accurate and statistically defensible? It separates sampling error,
-finite-difference bias, time integration, contractual monitoring and model error.
-Start with the [research report](docs/results.md) or the
-[executed overview notebook](notebooks/project_overview.ipynb).
+---
 
-## Features
+# Overview
 
-- Exact Black–Scholes grid simulation and full-truncation Heston simulation.
-- European, digital, Asian and discrete up-and-out payoffs.
-- Correct uncertainty for IID payoffs, antithetic pairs and independent-pilot controls.
-- Finite-difference Greeks with common random numbers; pathwise and likelihood-ratio Delta.
-- Reproducible convergence, variance, coverage, rare-event and integration studies.
-- 224 automated test functions; raw results, stream keys, figures and provenance metadata.
+This project implements a quantitative derivatives pricing framework from scratch in Python.
 
-## Project architecture
+The objective is not only to compute derivative prices, but to study the numerical behaviour of pricing methods through:
 
-| Location | Responsibility |
+- stochastic modelling;
+- Monte Carlo estimation;
+- variance reduction;
+- Greeks computation;
+- convergence analysis;
+- empirical validation.
+
+The framework is designed as a small quantitative research library rather than a collection of standalone notebooks.
+
+The main workflow is:
+
+```
+Stochastic Model
+        |
+        v
+Simulation Engine
+        |
+        v
+Derivative Product
+        |
+        v
+Monte Carlo Pricing
+        |
+        v
+Statistics & Risk Analysis
+```
+
+---
+
+# Research Highlights
+
+- Verified Monte Carlo convergence with empirical standard error scaling consistent with the theoretical \(N^{-1/2}\) behaviour.
+- Reduced Asian option estimator variance by approximately **99.83%** using geometric control variates.
+- Benchmarked Delta estimation using finite differences, pathwise differentiation and likelihood ratio methods.
+- Analysed discretisation effects in Heston stochastic volatility simulations.
+- Built a modular pricing architecture separating models, products, simulation and numerical diagnostics.
+
+---
+
+# Key Features
+
+| Component | Implementation |
 |---|---|
-| `src/mc_pricer/models/` | Validated immutable model parameters |
-| `src/mc_pricer/products/` | Pure payoff definitions |
-| `src/mc_pricer/simulation/` | Gaussian streams, exact GBM and recursive Heston paths |
-| `src/mc_pricer/pricing/` | Analytical references and Monte Carlo estimators |
-| `src/mc_pricer/variance_reduction/` | Antithetic pairs and pilot-fitted controls |
-| `src/mc_pricer/greeks/`, `statistics/` | Sensitivities, intervals and diagnostics |
-| `experiments/`, `tests/` | Reproducible studies and verification |
-| `results/`, `docs/`, `notebooks/` | Evidence, derivations and presentation |
+| Market models | Black-Scholes and Heston |
+| European options | Analytical and Monte Carlo pricing |
+| Digital options | Likelihood ratio validation experiments |
+| Asian options | Arithmetic path-dependent pricing |
+| Barrier options | Discrete monitoring Monte Carlo |
+| Variance reduction | Antithetic variables and control variates |
+| Greeks | Finite differences, pathwise and likelihood ratio |
+| Numerical validation | Convergence studies and repeated experiments |
 
-Notebook cells call the library and inspect saved experiments. No essential
-pricing implementation lives in a notebook. See [the completed roadmap](docs/roadmap.md).
+---
 
-## Mathematical framework
+# Architecture
 
-For a non-dividend-paying stock and a selected risk-neutral model:
+The project follows a modular quantitative software design.
 
-$$V_0=e^{-rT}\mathbb E^{\mathbb Q}[\Phi(S)],\qquad
-\widehat V_N=\frac1N\sum_{i=1}^N e^{-rT}\Phi_i.$$
+```
+                 Models
+                   |
+                   v
+              Simulation
+                   |
+                   v
+               Products
+                   |
+                   v
+                Pricing
+                   |
+                   v
+             Statistics & Greeks
+```
 
-For independent discounted samples, SE=s/sqrt(N), with sample variance denominator
-N-1. Normal confidence intervals quantify sampling uncertainty, not model or
-numerical bias. Antithetics and controls require their own independent-unit counts.
-[Derivations](docs/mathematical_background.md) cover simulation, variance reduction,
-Greeks and the Heston Fourier reference.
+The core implementation is contained in:
 
-## Supported models
+```
+src/mc_pricer/
+```
 
-**Black–Scholes (CORE):** exact lognormal transitions with constant rate and volatility.
-**Heston (ADVANCED):** auxiliary-state full truncation with an exponential stock
-step using old effective variance; separate integration and monitoring grids.
-A deterministic Fourier European reference validates integration error.
+The separation of responsibilities is:
 
-Maturity is in years; rates are continuously compounded; volatility is decimal.
-Heston v0/theta are variances. Negative rates are supported. All models omit dividends.
+| Module | Responsibility |
+|---|---|
+| `models/` | Define stochastic dynamics |
+| `products/` | Define derivative payoff functions |
+| `simulation/` | Generate Monte Carlo scenarios |
+| `pricing/` | Compute discounted expectations |
+| `variance_reduction/` | Reduce estimator variance |
+| `greeks/` | Estimate risk sensitivities |
+| `statistics/` | Analyse numerical uncertainty |
 
-## Supported products
+---
 
-European calls/puts, cash-or-nothing calls/puts, arithmetic/geometric Asian calls/puts,
-and zero-rebate up-and-out calls. Asians average jT/m, j=1,...,m, excluding inception.
-Barriers include inception and knock out on equality. Monitoring is discrete.
+# Mathematical Framework
 
-## Variance reduction
+Derivative prices are computed under the risk-neutral measure:
 
-Under Black–Scholes, antithetics use Z and -Z and calculate uncertainty from
-independent pair means. Arithmetic Asians use the exact geometric-Asian expectation
-and beta fitted on an independent pilot. The path budget includes the pilot.
-Controls evaluate two payoffs per path. Antithetics need not improve a barrier.
-Heston pricing currently uses plain IID sampling.
+\[
+V_0=e^{-rT}\mathbb{E}^{\mathbb Q}[\Phi(S)]
+\]
 
-## Greeks estimation
+Monte Carlo estimation:
 
-Black–Scholes Delta/Gamma/Vega use central differences with common random numbers.
-European vanilla Delta also supports pathwise differentiation; vanilla/digital
-spot Delta supports likelihood ratios. Vega is per unit absolute volatility.
-Pathwise Gamma, LR Gamma/Vega and Heston Greeks are future extensions.
+\[
+\hat V_N=
+e^{-rT}
+\frac{1}{N}
+\sum_{i=1}^{N}\Phi(S_i)
+\]
 
-## Numerical experiments
+Numerical methods are validated through:
 
-The [evidence index](results/tables/final_evidence_index.csv) maps all 12 required
-figures to numerical sources and reproduction commands. Independent-run studies
-report empirical bias, variance, RMSE and interval coverage where exact targets
-are known. Unknown arithmetic-Asian and multi-date barrier bias/RMSE remain missing.
+- analytical Black-Scholes benchmarks;
+- convergence studies;
+- confidence intervals;
+- repeated independent experiments.
 
-## Selected results
+Detailed mathematical documentation:
 
-| Evidence | Measurement | Scope |
-|---|---|---|
-| MC standard-error convergence | Call -0.49985; put -0.50032 | 200 runs/N, 10 sample counts; fitted log-log exponents |
-| Geometric control for Asian call | 99.83% lower empirical variance | M16: 50 runs, 12,000 paths including 1,200 pilot paths |
-| FD/pathwise Delta variance ratio | 3.05; bootstrap interval [1.60,5.51] | M16: equal 12,000 terminal evaluations, FD h=1 |
-| Heston high-xi call error | .43256 at 12 steps; .01062 at 384 | M15: pooled SE .02956/.02732; fixed model/contract |
+```
+docs/mathematical_background.md
+```
 
-The Asian variance ratio is 578.4 [300.1,1123.2], not a universal factor or
-speedup: the control costs more per run. Heston residual bias at 384 steps is
-unresolved. Earlier studies retain their own budgets and intervals. The report
-also retains failures: antithetic counterexamples, zero-SE rare-event estimates
-and a likelihood-ratio repeated-mean interval that misses its target.
+---
 
-![Final variance comparisons](results/figures/final_variance_comparisons.png)
+# Models
 
-## Installation
+## Black-Scholes
 
-From the repository root with Python 3.11+:
+Location:
+
+```
+src/mc_pricer/models/black_scholes.py
+```
+
+Capabilities:
+
+- exact geometric Brownian motion simulation;
+- terminal price generation;
+- path simulation;
+- analytical pricing benchmarks;
+- Greeks validation.
+
+---
+
+## Heston Stochastic Volatility
+
+Location:
+
+```
+src/mc_pricer/models/heston.py
+```
+
+Implemented features:
+
+- stochastic volatility dynamics;
+- correlated Brownian motions;
+- Full Truncation Euler discretisation;
+- time-step convergence analysis.
+
+Parameters:
+
+- kappa;
+- theta;
+- xi;
+- rho;
+- v0.
+
+---
+
+# Derivative Products
+
+Implemented contracts are located in:
+
+```
+src/mc_pricer/products/
+```
+
+## European Options
+
+```
+european.py
+```
+
+Supports:
+
+- European calls;
+- European puts.
+
+## Asian Options
+
+```
+asian.py
+```
+
+Features:
+
+- arithmetic averaging;
+- path simulation;
+- monitoring-frequency analysis.
+
+## Barrier Options
+
+```
+barrier.py
+```
+
+Features:
+
+- up-and-out barrier options;
+- discrete monitoring;
+- discretisation bias analysis.
+
+---
+
+# Variance Reduction
+
+## Antithetic Variables
+
+Implementation:
+
+```
+src/mc_pricer/variance_reduction/antithetic.py
+```
+
+Uses paired simulations:
+
+\[
+Z,-Z
+\]
+
+to reduce estimator variance.
+
+---
+
+## Control Variates
+
+Implementation:
+
+```
+src/mc_pricer/variance_reduction/control_variates.py
+```
+
+Example:
+
+Arithmetic Asian option controlled using the geometric Asian payoff.
+
+---
+
+# Greeks Estimation
+
+Implemented methods:
+
+```
+src/mc_pricer/greeks/
+```
+
+## Finite Differences
+
+Includes:
+
+- Delta;
+- Gamma;
+- Vega.
+
+Uses common random numbers to reduce numerical noise.
+
+## Pathwise Greeks
+
+Direct differentiation of simulated paths.
+
+Implemented:
+
+- European Delta.
+
+## Likelihood Ratio Method
+
+Density-based sensitivity estimation.
+
+Useful for:
+
+- discontinuous payoffs;
+- digital options.
+
+---
+
+# Selected Numerical Results
+
+| Experiment | Result |
+|---|---|
+| Monte Carlo convergence | Standard error follows \(N^{-1/2}\) scaling |
+| Asian control variate | Approximately 99.83% variance reduction |
+| Greeks comparison | FD, pathwise and likelihood ratio benchmarking |
+| Heston analysis | Time discretisation convergence study |
+
+---
+
+## Monte Carlo Convergence
+
+<p align="center">
+  <img src="results/figures/mc_loglog_convergence.png" width="650">
+</p>
+
+The empirical convergence rate is compared with the theoretical Monte Carlo standard error behaviour.
+
+---
+
+## Variance Reduction
+
+<p align="center">
+  <img src="results/figures/control_variate_variance_reduction.png" width="650">
+</p>
+
+The geometric Asian control variate significantly reduces estimator variance in the benchmark experiment.
+
+---
+
+## Greeks Comparison
+
+<p align="center">
+  <img src="results/figures/finite_difference_vs_pathwise_delta.png" width="650">
+</p>
+
+Delta estimation methods are compared against analytical benchmarks.
+
+---
+
+## Heston Convergence
+
+<p align="center">
+  <img src="results/figures/heston_time_convergence.png" width="650">
+</p>
+
+The stochastic volatility extension analyses the effect of time discretisation.
+
+---
+
+# Installation
+
+Clone the repository:
 
 ```bash
-python3 -m venv .venv
+git clone https://github.com/matteomatraxia26/monte-carlo-pricing-engine.git
+
+cd monte-carlo-pricing-engine
+```
+
+Create an environment:
+
+```bash
+python -m venv .venv
+
 source .venv/bin/activate
-python -m pip install -r requirements.txt
 ```
 
-Core dependencies: NumPy and SciPy. Research uses pandas/matplotlib; tests use
-pytest. No specialized finance library is required. The optional notebook can
-be opened in a Jupyter-compatible editor; the supplied Python execution checker
-needs only the research dependencies.
+Install dependencies:
 
-## Usage
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
+---
+
+# Quick Start
+
+Example: price a European call option.
 
 ```python
-from mc_pricer import (
-    BlackScholesModel, EuropeanOption, ArithmeticAsianOption,
-    black_scholes_price, price_monte_carlo, pathwise_delta, make_rng,
-)
-model = BlackScholesModel(spot=100.0, rate=0.05, volatility=0.20)
-call = EuropeanOption(strike=100.0)
-quote = price_monte_carlo(model, call, 1.0, 100_000, rng=make_rng(17))
-print(quote.price, quote.standard_error, quote.confidence_interval)
-print("Analytical:", black_scholes_price(model, 100.0, 1.0))
+from mc_pricer.models.black_scholes import BlackScholesModel
+from mc_pricer.products.european import EuropeanOption
+from mc_pricer.pricing.monte_carlo import price_monte_carlo
+from mc_pricer.simulation.random import make_rng
 
-asian = price_monte_carlo(
-    model, ArithmeticAsianOption(100.0), 1.0, 12_000, n_steps=12,
-    variance_reduction="control_variate", n_pilot_paths=1_200, rng=make_rng(18),
+model = BlackScholesModel(
+    spot=100.0,
+    rate=0.05,
+    volatility=0.20,
 )
-delta = pathwise_delta(model, call, 1.0, 12_000, rng=make_rng(19))
-print("Asian:", asian.price, "Delta:", delta.estimate)
+
+option = EuropeanOption(
+    strike=100.0,
+    option_type="call",
+)
+
+result = price_monte_carlo(
+    model=model,
+    product=option,
+    maturity=1.0,
+    n_paths=100000,
+    rng=make_rng(42),
+)
+
+print(result.price)
+print(result.confidence_interval)
 ```
 
-A complete small demonstration is `python examples/portfolio_demo.py`.
+---
 
-## Testing
+# Experiments
+
+All numerical experiments are located in:
+
+```
+experiments/
+```
+
+| Script | Purpose |
+|---|---|
+| `european_validation.py` | Monte Carlo vs Black-Scholes |
+| `mc_convergence.py` | Error convergence analysis |
+| `variance_reduction.py` | Estimator comparison |
+| `greeks_comparison.py` | Greeks benchmarking |
+| `exotic_pricing.py` | Asian and barrier pricing |
+| `heston_analysis.py` | Stochastic volatility analysis |
+
+Generated outputs:
+
+```
+results/
+├── figures/
+└── tables/
+```
+
+---
+
+# Testing
+
+The project includes tests covering:
+
+- pricing functions;
+- payoff definitions;
+- simulation engines;
+- variance reduction;
+- Greeks estimators;
+- Heston components.
+
+Run:
 
 ```bash
-python -m pytest
+pytest
 ```
 
-The delivered environment lacked pytest. All 224 plain pytest-discoverable test
-functions passed via `unittest.FunctionTestCase`; this is not a claim of pytest
-execution. Reproduce that fallback and the presentation check with:
+---
 
-```bash
-PYTHONPATH=src python tests/run_standard_library.py --report-name milestone_17_tests.json
-python -m experiments.check_presentation
+# Documentation
+
+Detailed documentation:
+
+```
+docs/
+
+mathematical_background.md
+methodology.md
+results.md
+roadmap.md
 ```
 
-The presentation checker executes notebook code cells sequentially with Python,
-saves real outputs and checks README examples. It is not a Jupyter-kernel test.
-Release verification records are in `results/raw/milestone_17_*.json`.
+---
 
-## Reproducibility
+# Future Extensions
 
-```bash
-python -m experiments.final_experiments
-python -m experiments.final_experiments --rebuild
-```
+Possible developments:
 
-The first command runs the M16 800-estimate comparison and indexes historical
-studies. The second checks raw/source hashes and reconstructs outputs without
-resimulation. Prior full studies have separate commands in the evidence index.
-Seeds, stream keys, draw order and package versions determine numerical replay;
-runtimes vary. Dependency ranges are not a lockfile. See [methodology](docs/methodology.md).
+- quasi-Monte Carlo methods;
+- automatic differentiation Greeks;
+- market calibration interface;
+- GPU acceleration;
+- additional stochastic volatility schemes.
 
-## Future extensions
+---
 
-Implemented CORE and selected ADVANCED components are complete for this scope.
-Possible additions: Heston Greeks/controls, batching, continuous-barrier corrections,
-lookbacks, Sobol/QMC, alternative Heston schemes and optional Numba/parallelism.
-The current release is a research library, not a production risk-system certification.
+# License
 
-## Connection with Heston calibration project
-
-```python
-from pathlib import Path
-from mc_pricer import HestonModel, price_heston_monte_carlo
-heston = HestonModel.from_json(
-    Path("examples/heston_calibration.json").read_text(), spot=100.0, rate=0.05,
-)
-heston_quote = price_heston_monte_carlo(
-    heston, ArithmeticAsianOption(100.0), 1.0, 12_000, 384,
-    n_observations=12, rng=make_rng(20),
-)
-print(heston_quote.price, heston_quote.standard_error)
-```
-
-The dictionary/JSON interface accepts risk-neutral kappa,theta,xi,rho,v0.
-The included payload is illustrative; neural-network training, market calibration
-and conversion of physical parameters to Q are outside this repository.
-
-For a technical discussion: [interview questions](docs/interview_questions.md),
-[12-minute walkthrough](docs/interview_walkthrough.md), [CV bullets](docs/cv_targets.md).
+MIT License
